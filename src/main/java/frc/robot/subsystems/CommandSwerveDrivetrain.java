@@ -7,6 +7,7 @@ import java.util.function.Supplier;
 
 import com.ctre.phoenix6.SignalLogger;
 import com.ctre.phoenix6.Utils;
+import com.ctre.phoenix6.hardware.Pigeon2;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveRequest;
@@ -16,14 +17,21 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
+import edu.wpi.first.math.util.Units;
+import edu.wpi.first.networktables.NetworkTable;
+import edu.wpi.first.networktables.NetworkTableEntry;
+import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
+import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
-
+import frc.robot.LimelightHelpers;
 import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
 
 /**
@@ -37,6 +45,13 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     private static final double kSimLoopPeriod = 0.004; // 4 ms
     private Notifier m_simNotifier = null;
     private double m_lastSimTime;
+
+    private final Field2d field = new Field2d();
+
+    private final SwerveRequest.FieldCentric driveRequest = new SwerveRequest.FieldCentric();
+
+    private final NetworkTable limelight; 
+
 
     /* Blue alliance sees forward as 0 degrees (toward red alliance wall) */
     private static final Rotation2d kBlueAlliancePerspectiveRotation = Rotation2d.kZero;
@@ -122,14 +137,15 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
      * @param drivetrainConstants   Drivetrain-wide constants for the swerve drive
      * @param modules               Constants for each specific module
      */
-    public CommandSwerveDrivetrain(
-        SwerveDrivetrainConstants drivetrainConstants,
-        SwerveModuleConstants<?, ?, ?>... modules
-    ) {
+    public CommandSwerveDrivetrain(SwerveDrivetrainConstants drivetrainConstants,SwerveModuleConstants<?, ?, ?>... modules) {
         super(drivetrainConstants, modules);
         if (Utils.isSimulation()) {
             startSimThread();
         }
+
+        SmartDashboard.putData("Field", field);
+        limelight = NetworkTableInstance.getDefault().getTable("limelight");
+        
     }
 
     /**
@@ -145,15 +161,14 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
      *                                CAN FD, and 100 Hz on CAN 2.0.
      * @param modules                 Constants for each specific module
      */
-    public CommandSwerveDrivetrain(
-        SwerveDrivetrainConstants drivetrainConstants,
-        double odometryUpdateFrequency,
-        SwerveModuleConstants<?, ?, ?>... modules
-    ) {
+    public CommandSwerveDrivetrain(SwerveDrivetrainConstants drivetrainConstants,double odometryUpdateFrequency,SwerveModuleConstants<?, ?, ?>... modules) {
+        
         super(drivetrainConstants, odometryUpdateFrequency, modules);
         if (Utils.isSimulation()) {
             startSimThread();
         }
+
+        limelight = NetworkTableInstance.getDefault().getTable("limelight");
     }
 
     /**
@@ -175,8 +190,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
      *                                  and radians
      * @param modules                   Constants for each specific module
      */
-    public CommandSwerveDrivetrain(
-        SwerveDrivetrainConstants drivetrainConstants,
+    public CommandSwerveDrivetrain(SwerveDrivetrainConstants drivetrainConstants,
         double odometryUpdateFrequency,
         Matrix<N3, N1> odometryStandardDeviation,
         Matrix<N3, N1> visionStandardDeviation,
@@ -186,6 +200,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         if (Utils.isSimulation()) {
             startSimThread();
         }
+
+        limelight = NetworkTableInstance.getDefault().getTable("limelight");
     }
 
     /**
@@ -239,6 +255,51 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                 m_hasAppliedOperatorPerspective = true;
             });
         }
+        
+        field.setRobotPose(getState().Pose);
+        updateVision();
+    }
+
+    private void updateVision() {
+        LimelightHelpers.PoseEstimate mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2("limelight");
+
+        if (mt2 == null || mt2.tagCount == 0) return;
+
+        if (Math.abs(getYawRateRadPerSec()) > Math.toRadians(360)) return;
+
+        addVisionMeasurement(mt2.pose, mt2.timestampSeconds);
+    }
+
+    public void aproachY() { 
+            double ty = limelight.getEntry("ty").getDouble(0.0);
+            double xSpeed = -0.1 * ty;
+
+        setControl(driveRequest
+                .withVelocityX(xSpeed)
+                .withVelocityY(0)
+                .withRotationalRate(0)
+    );}
+
+    public void aproachXY() { 
+            double ty = limelight.getEntry("ty").getDouble(0.0);
+            double tx = limelight.getEntry("tx").getDouble(0.0);
+            //double tv = limelight.getEntry("tv").getDouble(0.0);
+
+
+            double xSpeed = -0.1 * ty;
+            double ySpeed = -0.05 * tx;
+            //double vSpeed = -0.1 * tv;
+
+        setControl(driveRequest
+                .withVelocityX(xSpeed)
+                .withVelocityY(0)
+                .withRotationalRate(ySpeed)
+    );
+    }
+
+
+    public double getYawRateRadPerSec() {
+        return this.getState().Speeds.omegaRadiansPerSecond;
     }
 
     private void startSimThread() {
@@ -300,4 +361,5 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     public Optional<Pose2d> samplePoseAt(double timestampSeconds) {
         return super.samplePoseAt(Utils.fpgaToCurrentTime(timestampSeconds));
     }
+
 }
