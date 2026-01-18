@@ -9,6 +9,7 @@ import com.stzteam.forgemini.Optimizer;
 
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.TimedRobot;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.CommandScheduler;
 
@@ -31,9 +32,19 @@ public class Robot extends TimedRobot {
     @Override
     public void robotPeriodic() {
         m_timeAndJoystickReplay.update();
+
+        double startTime = Timer.getFPGATimestamp();
+
         CommandScheduler.getInstance().run(); 
-        Optimizer.update();
+
+        double executionTime = Timer.getFPGATimestamp() - startTime;
+        
+        Optimizer.update(executionTime);
+
+
     }
+
+
 
     @Override
     public void disabledInit() {}

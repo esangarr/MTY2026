@@ -1,39 +1,38 @@
 package frc.robot.subsystems;
 
-import static edu.wpi.first.units.Units.*;
-
 import java.util.Optional;
 import java.util.function.Supplier;
 
-import com.ctre.phoenix6.SignalLogger;
 import com.ctre.phoenix6.Utils;
-import com.ctre.phoenix6.hardware.Pigeon2;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.stzteam.forgemini.io.NetworkIO;
 
+import com.pathplanner.lib.auto.AutoBuilder;
+import com.pathplanner.lib.config.PIDConstants;
+import com.pathplanner.lib.config.RobotConfig;
+import com.pathplanner.lib.controllers.PPHolonomicDriveController;
+import com.pathplanner.lib.path.PathConstraints;
+
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
 import edu.wpi.first.math.util.Units;
-import edu.wpi.first.networktables.NetworkTable;
-import edu.wpi.first.networktables.NetworkTableEntry;
-import edu.wpi.first.networktables.NetworkTableInstance;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.RobotController;
-import edu.wpi.first.wpilibj.smartdashboard.Field2d;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
-import frc.robot.LimelightHelpers;
+import frc.robot.Utils.LimelightHelpers;
+import frc.robot.Utils.PoseFinder;
 import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
 
 /**
@@ -48,13 +47,6 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     private Notifier m_simNotifier = null;
     private double m_lastSimTime;
 
-    private final Field2d field = new Field2d();
-
-    private final SwerveRequest.FieldCentric driveRequest = new SwerveRequest.FieldCentric();
-
-    private final NetworkTable limelight; 
-
-
     /* Blue alliance sees forward as 0 degrees (toward red alliance wall) */
     private static final Rotation2d kBlueAlliancePerspectiveRotation = Rotation2d.kZero;
     /* Red alliance sees forward as 180 degrees (toward blue alliance wall) */
@@ -62,72 +54,21 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     /* Keep track if we've ever applied the operator perspective before or not */
     private boolean m_hasAppliedOperatorPerspective = false;
 
-    /* Swerve requests to apply during SysId characterization */
-    private final SwerveRequest.SysIdSwerveTranslation m_translationCharacterization = new SwerveRequest.SysIdSwerveTranslation();
-    private final SwerveRequest.SysIdSwerveSteerGains m_steerCharacterization = new SwerveRequest.SysIdSwerveSteerGains();
-    private final SwerveRequest.SysIdSwerveRotation m_rotationCharacterization = new SwerveRequest.SysIdSwerveRotation();
+    public final SysIdRoutineManager sysIdManager;
 
-    /* SysId routine for characterizing translation. This is used to find PID gains for the drive motors. */
-    private final SysIdRoutine m_sysIdRoutineTranslation = new SysIdRoutine(
-        new SysIdRoutine.Config(
-            null,        // Use default ramp rate (1 V/s)
-            Volts.of(4), // Reduce dynamic step voltage to 4 V to prevent brownout
-            null,        // Use default timeout (10 s)
-            // Log state with SignalLogger class
-            state -> SignalLogger.writeString("SysIdTranslation_State", state.toString())
-        ),
-        new SysIdRoutine.Mechanism(
-            output -> setControl(m_translationCharacterization.withVolts(output)),
-            null,
-            this
-        )
-    );
-
-    /* SysId routine for characterizing steer. This is used to find PID gains for the steer motors. */
-    private final SysIdRoutine m_sysIdRoutineSteer = new SysIdRoutine(
-        new SysIdRoutine.Config(
-            null,        // Use default ramp rate (1 V/s)
-            Volts.of(7), // Use dynamic voltage of 7 V
-            null,        // Use default timeout (10 s)
-            // Log state with SignalLogger class
-            state -> SignalLogger.writeString("SysIdSteer_State", state.toString())
-        ),
-        new SysIdRoutine.Mechanism(
-            volts -> setControl(m_steerCharacterization.withVolts(volts)),
-            null,
-            this
-        )
-    );
-
-    /*
-     * SysId routine for characterizing rotation.
-     * This is used to find PID gains for the FieldCentricFacingAngle HeadingController.
-     * See the documentation of SwerveRequest.SysIdSwerveRotation for info on importing the log to SysId.
-     */
-    private final SysIdRoutine m_sysIdRoutineRotation = new SysIdRoutine(
-        new SysIdRoutine.Config(
-            /* This is in radians per second², but SysId only supports "volts per second" */
-            Volts.of(Math.PI / 6).per(Second),
-            /* This is in radians per second, but SysId only supports "volts" */
-            Volts.of(Math.PI),
-            null, // Use default timeout (10 s)
-            // Log state with SignalLogger class
-            state -> SignalLogger.writeString("SysIdRotation_State", state.toString())
-        ),
-        new SysIdRoutine.Mechanism(
-            output -> {
-                /* output is actually radians per second, but SysId only supports "volts" */
-                setControl(m_rotationCharacterization.withRotationalRate(output.in(Volts)));
-                /* also log the requested output for SysId */
-                SignalLogger.writeDouble("Rotational_Rate", output.in(Volts));
-            },
-            null,
-            this
-        )
-    );
+    public final String limelightName = "limelight";
 
     /* The SysId routine to test */
-    private SysIdRoutine m_sysIdRoutineToApply = m_sysIdRoutineTranslation;
+    private SysIdRoutine m_sysIdRoutineToApply = null;
+
+    private PathConstraints pathConstraints = new PathConstraints(
+        4.5,
+        4.0,
+        Units.degreesToRadians(540),
+        Units.degreesToRadians(720)
+    );
+
+    private final PoseFinder finder;
 
     /**
      * Constructs a CTRE SwerveDrivetrain using the specified constants.
@@ -145,9 +86,13 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
             startSimThread();
         }
 
-        SmartDashboard.putData("Field", field);
-        limelight = NetworkTableInstance.getDefault().getTable("limelight");
-        
+        this.sysIdManager = new SysIdRoutineManager(this);
+        this.m_sysIdRoutineToApply = sysIdManager.m_sysIdRoutineTranslation;
+
+        configurePathPlanner();
+
+        this.finder = new PoseFinder(this, pathConstraints);
+
     }
 
     /**
@@ -170,7 +115,12 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
             startSimThread();
         }
 
-        limelight = NetworkTableInstance.getDefault().getTable("limelight");
+        this.sysIdManager = new SysIdRoutineManager(this);
+        this.m_sysIdRoutineToApply = sysIdManager.m_sysIdRoutineTranslation;
+
+        configurePathPlanner();
+
+        this.finder = new PoseFinder(this, pathConstraints);
     }
 
     /**
@@ -203,9 +153,49 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
             startSimThread();
         }
 
-        limelight = NetworkTableInstance.getDefault().getTable("limelight");
+        this.sysIdManager = new SysIdRoutineManager(this);
+        this.m_sysIdRoutineToApply = sysIdManager.m_sysIdRoutineTranslation;
+
+        configurePathPlanner();
+
+        this.finder = new PoseFinder(this, pathConstraints);
     }
 
+    public void setSysIdRoutine(SysIdRoutine routine){
+        this.m_sysIdRoutineToApply = routine;
+    }
+
+    private void configurePathPlanner() {
+        try {
+            // Cargar configuración de la GUI de PathPlanner (RobotConfig)
+            RobotConfig config = RobotConfig.fromGUISettings();
+
+            AutoBuilder.configure(
+                () -> this.getState().Pose,      // 1. Supplier de Pose
+                this::resetPose,         // 2. Consumer para resetear pose
+                this::getChassisSpeeds, // 3. Supplier de Velocidades actuales
+                (speeds, feedforwards) -> this.setControl(SwerveRequestFactory.pathPlannerRequest.withSpeeds(speeds)), 
+                // -----------------------------
+
+                new PPHolonomicDriveController(
+                    new PIDConstants(5.0, 0.0, 0.0), // PID de Traslación
+                    new PIDConstants(5.0, 0.0, 0.0)  // PID de Rotación
+                ),
+                config,
+                () -> {
+                    var alliance = DriverStation.getAlliance();
+                    return alliance.isPresent() && alliance.get() == DriverStation.Alliance.Red;
+                },
+                this
+            );
+        } catch (Exception e) {
+            DriverStation.reportError("Fallo al configurar PathPlanner: " + e.getMessage(), true);
+        }
+    }
+
+    public ChassisSpeeds getChassisSpeeds() {
+        return getKinematics().toChassisSpeeds(getState().ModuleStates);
+    }
     /**
      * Returns a command that applies the specified control request to this swerve drivetrain.
      *
@@ -224,6 +214,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
      * @return Command to run
      */
     public Command sysIdQuasistatic(SysIdRoutine.Direction direction) {
+
+        if (m_sysIdRoutineToApply == null){ return Commands.none();}
+
         return m_sysIdRoutineToApply.quasistatic(direction);
     }
 
@@ -235,6 +228,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
      * @return Command to run
      */
     public Command sysIdDynamic(SysIdRoutine.Direction direction) {
+
+        if (m_sysIdRoutineToApply == null){ return Commands.none();}
+
         return m_sysIdRoutineToApply.dynamic(direction);
     }
 
@@ -258,8 +254,6 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
             });
         }
         
-        field.setRobotPose(getState().Pose);
-
         updateVision();
     
         NetworkIO.set("Swerve", "Pose", getState().Pose);
@@ -267,8 +261,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     }
 
     private void updateVision() {
-        LimelightHelpers.SetRobotOrientation("limelight", this.getPigeon2().getRotation2d().getDegrees(), 0, 0, 0, 0, 0);
-        LimelightHelpers.PoseEstimate mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2("limelight");
+        LimelightHelpers.SetRobotOrientation(limelightName, this.getPigeon2().getRotation2d().getDegrees(), 0, 0, 0, 0, 0);
+        LimelightHelpers.PoseEstimate mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelightName);
 
         if (mt2 == null || mt2.tagCount == 0) return;
 
@@ -278,36 +272,80 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     }
 
     public void aproachY() { 
-            double ty = limelight.getEntry("ty").getDouble(0.0);
+            double ty = LimelightHelpers.getTY(limelightName);
             double xSpeed = -0.1 * ty;
 
-        setControl(driveRequest
+        setControl(SwerveRequestFactory.simpleDriveRequest
                 .withVelocityX(xSpeed)
                 .withVelocityY(0)
                 .withRotationalRate(0)
     );}
 
-
+    /**
+     * MODO 1: AUTO-DOCK (El robot hace todo)
+     * Se acerca al tag y se alinea usando RobotCentric.
+     */
     public void aproachXY() { 
-            double ty = limelight.getEntry("ty").getDouble(0.0);
-            double tx = limelight.getEntry("tx").getDouble(0.0);
+        // 1. Obtener datos de Limelight
+        double ty = LimelightHelpers.getTY(limelightName); // Distancia vertical
+        double tx = LimelightHelpers.getTX(limelightName); // Error horizontal
+        boolean hasTarget = LimelightHelpers.getTV(limelightName);
 
-            double xSpeed = -0.1 * ty;
-            double ySpeed = -0.05 * tx;
+        if (!hasTarget) {
+            // Si no ve nada, frenar por seguridad
+            setControl(SwerveRequestFactory.idle);
+            return;
+        }
 
-        setControl(driveRequest
-                .withVelocityX(xSpeed)
-                .withVelocityY(0)
-                .withRotationalRate(ySpeed)
-    );
+        // 2. Calcular velocidades (PID Proporcional simple)
+        // ty positivo = target arriba (lejos) -> ir adelante (+X)
+        // tx positivo = target a la derecha -> girar a la derecha (-Rot)
+        
+        double forwardSpeed = ty * 0.1;  // KP Distance
+        double turnSpeed    = tx * -0.05; // KP Rotation (Invertido)
+        double strafeSpeed  = tx * 0.05; // KP Strafe (Opcional: moverse lateralmente para centrar)
+
+        // 3. Aplicar control ROBOT CENTRIC desde tu Factory
+        setControl(SwerveRequestFactory.driveRobotCentric
+            .withVelocityX(forwardSpeed)
+            .withVelocityY(0) // O usa strafeSpeed si quieres centrado perfecto
+            .withRotationalRate(turnSpeed)
+        );
     }
 
+    /**
+     * MODO 2: AIM ASSIST (Para Teleop)
+     * El piloto controla X/Y, el robot controla el giro hacia el tag.
+     * @param xSpeed Velocidad X del Joystick
+     * @param ySpeed Velocidad Y del Joystick
+     */
+    public void driveFacingTag(double xSpeed, double ySpeed) {
+        double tx = LimelightHelpers.getTX("limelight");
+        boolean hasTarget = LimelightHelpers.getTV("limelight");
+
+        // Calcular el ángulo actual del robot
+        Rotation2d currentHeading = this.getPigeon2().getRotation2d();
+
+        // Si vemos tag, el ángulo deseado es: (MiAngulo - ErrorDelTag)
+        // Si no vemos tag, mantenemos el ángulo actual
+        Rotation2d targetHeading = hasTarget 
+            ? currentHeading.minus(Rotation2d.fromDegrees(tx)) 
+            : currentHeading;
+
+        // Usamos el request de Aim de la Factory
+        setControl(SwerveRequestFactory.aimRequest
+            .withVelocityX(xSpeed)
+            .withVelocityY(ySpeed)
+            .withTargetDirection(targetHeading)
+        );
+    }
+    
     public void moveX(double speed) { 
-        setControl(driveRequest.withVelocityX(speed));
+        setControl(SwerveRequestFactory.simpleDriveRequest.withVelocityX(speed));
     }
 
     public void moveY(double speed) { 
-        setControl(driveRequest.withVelocityY(speed));
+        setControl(SwerveRequestFactory.simpleDriveRequest.withVelocityY(speed));
     }
 
     private void startSimThread() {
@@ -368,6 +406,10 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     @Override
     public Optional<Pose2d> samplePoseAt(double timestampSeconds) {
         return super.samplePoseAt(Utils.fpgaToCurrentTime(timestampSeconds));
+    }
+
+    public PoseFinder getPoseFinder(){
+        return finder;
     }
 
 }
