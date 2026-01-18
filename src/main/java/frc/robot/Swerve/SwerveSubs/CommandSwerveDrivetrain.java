@@ -1,4 +1,4 @@
-package frc.robot.subsystems;
+package frc.robot.Swerve.SwerveSubs;
 
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -27,13 +27,15 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.DriverStation.Alliance;
 import edu.wpi.first.wpilibj.Notifier;
 import edu.wpi.first.wpilibj.RobotController;
+import edu.wpi.first.wpilibj.smartdashboard.Field2d;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
-import frc.robot.Utils.LimelightHelpers;
-import frc.robot.Utils.PoseFinder;
-import frc.robot.generated.TunerConstants.TunerSwerveDrivetrain;
+import frc.robot.Swerve.SwerveConstants.TunerConstants.TunerSwerveDrivetrain;
+import frc.robot.Vision.LimelightHelpers;
+
 
 /**
  * Class that extends the Phoenix 6 SwerveDrivetrain class and implements
@@ -46,6 +48,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     private static final double kSimLoopPeriod = 0.004; // 4 ms
     private Notifier m_simNotifier = null;
     private double m_lastSimTime;
+
+    private final Field2d field = new Field2d();
 
     /* Blue alliance sees forward as 0 degrees (toward red alliance wall) */
     private static final Rotation2d kBlueAlliancePerspectiveRotation = Rotation2d.kZero;
@@ -90,6 +94,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         this.m_sysIdRoutineToApply = sysIdManager.m_sysIdRoutineTranslation;
 
         configurePathPlanner();
+        SmartDashboard.putData("Field", field);
 
         this.finder = new PoseFinder(this, pathConstraints);
 
@@ -255,7 +260,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         }
         
         updateVision();
-    
+        field.setRobotPose(getState().Pose);
+
         NetworkIO.set("Swerve", "Pose", getState().Pose);
         
     }

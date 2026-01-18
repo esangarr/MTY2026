@@ -7,7 +7,6 @@ package frc.robot;
 import com.ctre.phoenix6.HootAutoReplay;
 import com.stzteam.forgemini.Optimizer;
 
-import edu.wpi.first.math.util.Units;
 import edu.wpi.first.wpilibj.TimedRobot;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj2.command.Command;

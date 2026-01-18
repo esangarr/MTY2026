@@ -1,4 +1,4 @@
-package frc.robot.Utils;
+package frc.robot.Swerve.SwerveSubs;
 
 import java.util.List;
 import java.util.Set;
@@ -14,7 +14,6 @@ import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 
-import frc.robot.subsystems.CommandSwerveDrivetrain;
 
 /**
  * PoseFinder optimizado para CTRE Phoenix 6 Swerve.
@@ -42,7 +41,6 @@ public class PoseFinder{
     // --- Helpers de Estado ---
     
     public Pose2d getChassisPose() {
-        // Acceso directo al estado de CTRE
         return drivetrain.getState().Pose;
     }
 
