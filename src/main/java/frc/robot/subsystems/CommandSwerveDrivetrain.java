@@ -11,8 +11,10 @@ import com.ctre.phoenix6.hardware.Pigeon2;
 import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveRequest;
+import com.stzteam.forgemini.io.NetworkIO;
 
 import edu.wpi.first.math.Matrix;
+import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.numbers.N1;
@@ -257,17 +259,22 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         }
         
         field.setRobotPose(getState().Pose);
+
         updateVision();
+    
+        NetworkIO.set("Swerve", "Pose", getState().Pose);
+        
     }
 
     private void updateVision() {
+        LimelightHelpers.SetRobotOrientation("limelight", this.getPigeon2().getRotation2d().getDegrees(), 0, 0, 0, 0, 0);
         LimelightHelpers.PoseEstimate mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2("limelight");
 
         if (mt2 == null || mt2.tagCount == 0) return;
 
-        if (Math.abs(getYawRateRadPerSec()) > Math.toRadians(360)) return;
-
-        addVisionMeasurement(mt2.pose, mt2.timestampSeconds);
+        if (Math.abs(this.getPigeon2().getAngularVelocityZWorld().getValueAsDouble()) > 720) return;
+        
+        addVisionMeasurement(mt2.pose, mt2.timestampSeconds, VecBuilder.fill(.7,.7,9999999));
     }
 
     public void aproachY() { 
@@ -280,15 +287,13 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                 .withRotationalRate(0)
     );}
 
+
     public void aproachXY() { 
             double ty = limelight.getEntry("ty").getDouble(0.0);
             double tx = limelight.getEntry("tx").getDouble(0.0);
-            //double tv = limelight.getEntry("tv").getDouble(0.0);
-
 
             double xSpeed = -0.1 * ty;
             double ySpeed = -0.05 * tx;
-            //double vSpeed = -0.1 * tv;
 
         setControl(driveRequest
                 .withVelocityX(xSpeed)
@@ -297,9 +302,12 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     );
     }
 
+    public void moveX(double speed) { 
+        setControl(driveRequest.withVelocityX(speed));
+    }
 
-    public double getYawRateRadPerSec() {
-        return this.getState().Speeds.omegaRadiansPerSecond;
+    public void moveY(double speed) { 
+        setControl(driveRequest.withVelocityY(speed));
     }
 
     private void startSimThread() {
