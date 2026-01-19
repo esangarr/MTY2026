@@ -1,4 +1,4 @@
-package frc.robot.Swerve.SwerveSubs;
+package frc.robot.DriveTrain.SwerveSubs;
 
 import java.util.Optional;
 import java.util.function.Supplier;
@@ -33,7 +33,7 @@ import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
-import frc.robot.Swerve.SwerveConstants.TunerConstants.TunerSwerveDrivetrain;
+import frc.robot.DriveTrain.SwerveConstants.TunerConstants.TunerSwerveDrivetrain;
 import frc.robot.Vision.LimelightHelpers;
 
 
@@ -262,7 +262,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         updateVision();
         field.setRobotPose(getState().Pose);
 
-        NetworkIO.set("Swerve", "Pose", getState().Pose);
+        NetworkIO.set("HOLAAA", "Pose", getState().Pose);
         
     }
 
@@ -354,6 +354,10 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         setControl(SwerveRequestFactory.simpleDriveRequest.withVelocityY(speed));
     }
 
+    public PoseFinder getPoseFinder(){
+        return finder;
+    }
+
     private void startSimThread() {
         m_lastSimTime = Utils.getCurrentTimeSeconds();
 
@@ -414,8 +418,5 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         return super.samplePoseAt(Utils.fpgaToCurrentTime(timestampSeconds));
     }
 
-    public PoseFinder getPoseFinder(){
-        return finder;
-    }
 
 }

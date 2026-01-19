@@ -1,4 +1,4 @@
-package frc.robot.Swerve.SwerveSubs;
+package frc.robot.DriveTrain.SwerveSubs;
 
 import static edu.wpi.first.units.Units.MetersPerSecond;
 import static edu.wpi.first.units.Units.RadiansPerSecond;
@@ -7,7 +7,7 @@ import static edu.wpi.first.units.Units.RotationsPerSecond;
 import com.ctre.phoenix6.swerve.SwerveModule;
 import com.ctre.phoenix6.swerve.SwerveModule.DriveRequestType;
 
-import frc.robot.Swerve.SwerveConstants.TunerConstants;
+import frc.robot.DriveTrain.SwerveConstants.TunerConstants;
 
 import com.ctre.phoenix6.swerve.SwerveRequest;
 

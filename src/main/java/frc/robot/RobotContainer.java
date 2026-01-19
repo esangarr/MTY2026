@@ -6,15 +6,21 @@ package frc.robot;
 
 import com.ctre.phoenix6.swerve.SwerveRequest;
 
+import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.trajectory.ExponentialProfile.Constraints;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
-import frc.robot.Swerve.SwerveConstants.TunerConstants;
-import frc.robot.Swerve.SwerveSubs.CommandSwerveDrivetrain;
-import frc.robot.Swerve.SwerveSubs.SwerveRequestFactory;
+import frc.robot.Commands.LimeCommands;
+import frc.robot.DriveTrain.SwerveConstants.TunerConstants;
+import frc.robot.DriveTrain.SwerveSubs.CommandSwerveDrivetrain;
+import frc.robot.DriveTrain.SwerveSubs.PoseFinder;
+import frc.robot.DriveTrain.SwerveSubs.SwerveRequestFactory;
+
+import frc.robot.DriveTrain.SwerveSubs.PoseFinder;
 
 public class RobotContainer {
  
@@ -23,7 +29,8 @@ public class RobotContainer {
 
     private final Telemetry logger = new Telemetry(MaxSpeed);
 
-    private final CommandXboxController joystick = new CommandXboxController(0);
+    private final CommandXboxController driver = new CommandXboxController(0);
+    private final CommandXboxController operator = new CommandXboxController(1);
 
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
 
@@ -32,38 +39,33 @@ public class RobotContainer {
     }
 
     private void configureBindings() {
-        // Note that X is defined as forward according to WPILib convention,
-        // and Y is defined as to the left according to WPILib convention.
+
+        final var idle = new SwerveRequest.Idle();
+        RobotModeTriggers.disabled().whileTrue(drivetrain.applyRequest(() -> idle).ignoringDisable(true) );
+        // -------- SYSID CARACTESIZATION CONTROL -----------------------------------------------------------------------
+        driver.a().whileTrue(drivetrain.applyRequest(() -> SwerveRequestFactory.brake));
+        driver.b().whileTrue(drivetrain.applyRequest(() ->SwerveRequestFactory.point.withModuleDirection(new Rotation2d(-driver.getLeftY(), -driver.getLeftX()))));
+
+        driver.back().and(driver.y()).whileTrue(drivetrain.sysIdDynamic(Direction.kForward));
+        driver.back().and(driver.x()).whileTrue(drivetrain.sysIdDynamic(Direction.kReverse));
+        driver.start().and(driver.y()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
+        driver.start().and(driver.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
+        
+
         drivetrain.setDefaultCommand(
             // Drivetrain will execute this command periodically
             drivetrain.applyRequest(() ->
-                SwerveRequestFactory.driveFieldCentric.withVelocityX(-joystick.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
-                    .withVelocityY(-joystick.getLeftX() * MaxSpeed) // Drive left with negative X (left)
-                    .withRotationalRate(-joystick.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
+                SwerveRequestFactory.driveFieldCentric.withVelocityX(-driver.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
+                    .withVelocityY(-driver.getLeftX() * MaxSpeed) // Drive left with negative X (left)
+                    .withRotationalRate(-driver.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
             )
         );
+        
+        driver.y().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
 
-        // Idle while the robot is disabled. This ensures the configured
-        // neutral mode is applied to the drive motors while disabled.
-        final var idle = new SwerveRequest.Idle();
-        RobotModeTriggers.disabled().whileTrue(
-            drivetrain.applyRequest(() -> idle).ignoringDisable(true)
-        );
+        driver.rightBumper().whileTrue(LimeCommands.snapToApril(drivetrain));
 
-        joystick.a().whileTrue(drivetrain.applyRequest(() -> SwerveRequestFactory.brake));
-        joystick.b().whileTrue(drivetrain.applyRequest(() ->
-            SwerveRequestFactory.point.withModuleDirection(new Rotation2d(-joystick.getLeftY(), -joystick.getLeftX()))
-        ));
-
-        // Run SysId routines when holding back/start and X/Y.
-        // Note that each routine should be run exactly once in a single log.
-        joystick.back().and(joystick.y()).whileTrue(drivetrain.sysIdDynamic(Direction.kForward));
-        joystick.back().and(joystick.x()).whileTrue(drivetrain.sysIdDynamic(Direction.kReverse));
-        joystick.start().and(joystick.y()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
-        joystick.start().and(joystick.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
-
-        // Reset the field-centric heading on left bumper press.
-        joystick.leftBumper().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
+        driver.x().whileTrue(drivetrain.getPoseFinder().toPose(new Pose2d(2.159, 4.650, Rotation2d.kZero)));
 
         drivetrain.registerTelemetry(logger::telemeterize);
     }
