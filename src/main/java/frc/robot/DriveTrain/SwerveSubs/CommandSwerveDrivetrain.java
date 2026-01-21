@@ -8,7 +8,7 @@ import com.ctre.phoenix6.swerve.SwerveDrivetrainConstants;
 import com.ctre.phoenix6.swerve.SwerveModuleConstants;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.stzteam.forgemini.io.NetworkIO;
-
+import com.stzteam.forgemini.io.Signal;
 import com.pathplanner.lib.auto.AutoBuilder;
 import com.pathplanner.lib.config.PIDConstants;
 import com.pathplanner.lib.config.RobotConfig;
@@ -91,10 +91,13 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         }
 
         this.sysIdManager = new SysIdRoutineManager(this);
-        this.m_sysIdRoutineToApply = sysIdManager.m_sysIdRoutineTranslation;
+        this.m_sysIdRoutineToApply = sysIdManager.getSelected();
 
         configurePathPlanner();
         SmartDashboard.putData("Field", field);
+
+        
+        NetworkIO.set("Chasis", "SysID", m_sysIdRoutineToApply.toString());
 
         this.finder = new PoseFinder(this, pathConstraints);
 
@@ -121,7 +124,10 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         }
 
         this.sysIdManager = new SysIdRoutineManager(this);
-        this.m_sysIdRoutineToApply = sysIdManager.m_sysIdRoutineTranslation;
+        this.m_sysIdRoutineToApply = sysIdManager.getSelected();
+
+        
+        NetworkIO.set("Chasis", "SysID", m_sysIdRoutineToApply.toString());
 
         configurePathPlanner();
 
@@ -159,7 +165,9 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         }
 
         this.sysIdManager = new SysIdRoutineManager(this);
-        this.m_sysIdRoutineToApply = sysIdManager.m_sysIdRoutineTranslation;
+        this.m_sysIdRoutineToApply = sysIdManager.getSelected();
+
+        NetworkIO.set("Chasis", "SysID", m_sysIdRoutineToApply.toString());
 
         configurePathPlanner();
 
@@ -258,23 +266,41 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                 m_hasAppliedOperatorPerspective = true;
             });
         }
-        
+  
         updateVision();
         field.setRobotPose(getState().Pose);
-
-        NetworkIO.set("HOLAAA", "Pose", getState().Pose);
+        NetworkIO.set("Chasis", "Distancia", getDistanceToTag());
         
+    }
+
+    public double getDistanceToTag() {
+
+        double[] targetPose = LimelightHelpers.getTargetPose_CameraSpace("limelight");
+
+
+        if (LimelightHelpers.getTV("limelight")) {
+        
+
+            double distanceZ = targetPose[2]; 
+
+            return distanceZ; 
+        }
+
+        return 0.0;
     }
 
     private void updateVision() {
         LimelightHelpers.SetRobotOrientation(limelightName, this.getPigeon2().getRotation2d().getDegrees(), 0, 0, 0, 0, 0);
         LimelightHelpers.PoseEstimate mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelightName);
-
+        
         if (mt2 == null || mt2.tagCount == 0) return;
 
         if (Math.abs(this.getPigeon2().getAngularVelocityZWorld().getValueAsDouble()) > 720) return;
         
-        addVisionMeasurement(mt2.pose, mt2.timestampSeconds, VecBuilder.fill(.7,.7,9999999));
+        NetworkIO.set("Chasis", "Mt2", mt2.pose);
+
+
+        addVisionMeasurement(mt2.pose, mt2.timestampSeconds, VecBuilder.fill(.3,.3,9999999));
     }
 
     public void aproachY() { 
@@ -292,31 +318,17 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
      * Se acerca al tag y se alinea usando RobotCentric.
      */
     public void aproachXY() { 
-        // 1. Obtener datos de Limelight
-        double ty = LimelightHelpers.getTY(limelightName); // Distancia vertical
-        double tx = LimelightHelpers.getTX(limelightName); // Error horizontal
-        boolean hasTarget = LimelightHelpers.getTV(limelightName);
+            double ty = LimelightHelpers.getTY(limelightName);
+            double tx = LimelightHelpers.getTX(limelightName);
 
-        if (!hasTarget) {
-            // Si no ve nada, frenar por seguridad
-            setControl(SwerveRequestFactory.idle);
-            return;
-        }
+            double xSpeed = -0.1 * ty;
+            double ySpeed = -0.05 * tx;
 
-        // 2. Calcular velocidades (PID Proporcional simple)
-        // ty positivo = target arriba (lejos) -> ir adelante (+X)
-        // tx positivo = target a la derecha -> girar a la derecha (-Rot)
-        
-        double forwardSpeed = ty * 0.1;  // KP Distance
-        double turnSpeed    = tx * -0.05; // KP Rotation (Invertido)
-        double strafeSpeed  = tx * 0.05; // KP Strafe (Opcional: moverse lateralmente para centrar)
-
-        // 3. Aplicar control ROBOT CENTRIC desde tu Factory
-        setControl(SwerveRequestFactory.driveRobotCentric
-            .withVelocityX(forwardSpeed)
-            .withVelocityY(0) // O usa strafeSpeed si quieres centrado perfecto
-            .withRotationalRate(turnSpeed)
-        );
+        setControl(SwerveRequestFactory.simpleDriveRequest
+                .withVelocityX(xSpeed)
+                .withVelocityY(0)
+                .withRotationalRate(ySpeed)
+    );
     }
 
     /**

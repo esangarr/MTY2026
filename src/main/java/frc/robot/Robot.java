@@ -25,20 +25,20 @@ public class Robot extends TimedRobot {
     public Robot() {
         m_robotContainer = new RobotContainer();
 
-        Optimizer.init();
+        //Optimizer.init();
     }
 
     @Override
     public void robotPeriodic() {
         m_timeAndJoystickReplay.update();
 
-        double startTime = Timer.getFPGATimestamp();
+        //double startTime = Timer.getFPGATimestamp();
 
         CommandScheduler.getInstance().run(); 
 
-        double executionTime = Timer.getFPGATimestamp() - startTime;
+        //double executionTime = Timer.getFPGATimestamp() - startTime;
         
-        Optimizer.update(executionTime);
+        //Optimizer.update(executionTime);
 
 
     }

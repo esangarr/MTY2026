@@ -4,7 +4,10 @@
 
 package frc.robot;
 
+import com.ctre.phoenix6.SignalLogger;
 import com.ctre.phoenix6.swerve.SwerveRequest;
+import com.pathplanner.lib.commands.PathPlannerAuto;
+import com.stzteam.forgemini.io.SmartChooser;
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
@@ -34,8 +37,20 @@ public class RobotContainer {
 
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
 
+    private final SmartChooser<Command> autoChooser;
+
+    private final PathPlannerAuto moveHub;
+
     public RobotContainer() {
-        configureBindings();        
+        configureBindings(); 
+        
+        moveHub = new PathPlannerAuto("moveToHub");
+        
+        autoChooser = new SmartChooser<>("Auto Mode");
+
+        autoChooser.setDefault("moveHub", moveHub);
+
+        autoChooser.publish();
     }
 
     private void configureBindings() {
@@ -43,29 +58,35 @@ public class RobotContainer {
         final var idle = new SwerveRequest.Idle();
         RobotModeTriggers.disabled().whileTrue(drivetrain.applyRequest(() -> idle).ignoringDisable(true) );
         // -------- SYSID CARACTESIZATION CONTROL -----------------------------------------------------------------------
-        driver.a().whileTrue(drivetrain.applyRequest(() -> SwerveRequestFactory.brake));
-        driver.b().whileTrue(drivetrain.applyRequest(() ->SwerveRequestFactory.point.withModuleDirection(new Rotation2d(-driver.getLeftY(), -driver.getLeftX()))));
 
-        driver.back().and(driver.y()).whileTrue(drivetrain.sysIdDynamic(Direction.kForward));
-        driver.back().and(driver.x()).whileTrue(drivetrain.sysIdDynamic(Direction.kReverse));
-        driver.start().and(driver.y()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
-        driver.start().and(driver.x()).whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
+        driver.povUp().whileTrue(drivetrain.sysIdDynamic(Direction.kForward));
+        driver.povDown().whileTrue(drivetrain.sysIdDynamic(Direction.kReverse));
+        driver.povLeft().whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
+        driver.povRight().whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
         
 
         drivetrain.setDefaultCommand(
             // Drivetrain will execute this command periodically
             drivetrain.applyRequest(() ->
-                SwerveRequestFactory.driveFieldCentric.withVelocityX(-driver.getLeftY() * MaxSpeed) // Drive forward with negative Y (forward)
-                    .withVelocityY(-driver.getLeftX() * MaxSpeed) // Drive left with negative X (left)
+                SwerveRequestFactory.driveFieldCentric.withVelocityX(-driver.getLeftY() * MaxSpeed /2) // Drive forward with negative Y (forward)
+                    .withVelocityY(-driver.getLeftX() * MaxSpeed/2) // Drive left with negative X (left)
                     .withRotationalRate(-driver.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
             )
         );
-        
+
         driver.y().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
+        
+        /* 
+        driver.x().whileTrue(drivetrain.getPoseFinder().toPose(new Pose2d(1.25, 3.3, Rotation2d.kZero)));
+        driver.y().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
+        driver.a().whileTrue(drivetrain.applyRequest(() -> SwerveRequestFactory.brake));
+        driver.b().whileTrue(drivetrain.applyRequest(() ->SwerveRequestFactory.point.withModuleDirection(new Rotation2d(-driver.getLeftY(), -driver.getLeftX()))));
 
         driver.rightBumper().whileTrue(LimeCommands.snapToApril(drivetrain));
+        driver.leftBumper().whileTrue(LimeCommands.snapToApril2(drivetrain));
+*/
 
-        driver.x().whileTrue(drivetrain.getPoseFinder().toPose(new Pose2d(2.159, 4.650, Rotation2d.kZero)));
+        
 
         drivetrain.registerTelemetry(logger::telemeterize);
     }
@@ -88,4 +109,5 @@ public class RobotContainer {
             drivetrain.applyRequest(() -> idle)
         );
     }
+    
 }

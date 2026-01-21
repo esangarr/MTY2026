@@ -66,4 +66,10 @@ public class SysIdRoutineManager {
             )
         );
     }
+
+    public SysIdRoutine getSelected(){
+        return this.m_sysIdRoutineRotation;
+    }
+
+   
 }
