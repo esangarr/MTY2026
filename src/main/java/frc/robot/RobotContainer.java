@@ -12,6 +12,8 @@ import com.stzteam.forgemini.io.SmartChooser;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.ExponentialProfile.Constraints;
+import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
@@ -37,46 +39,53 @@ public class RobotContainer {
 
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
 
-    private final SmartChooser<Command> autoChooser;
+    private final SendableChooser<Command> autoChooser = new SendableChooser<>();
 
     private final PathPlannerAuto moveHub;
+    private final PathPlannerAuto rotar;
+    private final PathPlannerAuto square;
+
 
     public RobotContainer() {
         configureBindings(); 
         
-        moveHub = new PathPlannerAuto("moveToHub");
+        moveHub = new PathPlannerAuto("New Auto");
+        rotar = new PathPlannerAuto("Rotacion");
+        square = new PathPlannerAuto("Square");
+
+        autoChooser.setDefaultOption("niggaMOve", moveHub);
+
+        autoChooser.addOption("rotar", rotar);
+        autoChooser.addOption("cuadrado", square);
         
-        autoChooser = new SmartChooser<>("Auto Mode");
 
-        autoChooser.setDefault("moveHub", moveHub);
-
-        autoChooser.publish();
+        SmartDashboard.putData("AutoSelector", autoChooser);
+  
+        
     }
-
     private void configureBindings() {
 
         final var idle = new SwerveRequest.Idle();
         RobotModeTriggers.disabled().whileTrue(drivetrain.applyRequest(() -> idle).ignoringDisable(true) );
         // -------- SYSID CARACTESIZATION CONTROL -----------------------------------------------------------------------
-
+/* 
         driver.povUp().whileTrue(drivetrain.sysIdDynamic(Direction.kForward));
         driver.povDown().whileTrue(drivetrain.sysIdDynamic(Direction.kReverse));
         driver.povLeft().whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
-        driver.povRight().whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));
+        driver.povRight().whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));*/
         
 
         drivetrain.setDefaultCommand(
             // Drivetrain will execute this command periodically
             drivetrain.applyRequest(() ->
-                SwerveRequestFactory.driveFieldCentric.withVelocityX(-driver.getLeftY() * MaxSpeed /2) // Drive forward with negative Y (forward)
-                    .withVelocityY(-driver.getLeftX() * MaxSpeed/2) // Drive left with negative X (left)
+                SwerveRequestFactory.driveFieldCentric.withVelocityX(-driver.getLeftY() * MaxSpeed ) // Drive forward with negative Y (forward)
+                    .withVelocityY(-driver.getLeftX() * MaxSpeed) // Drive left with negative X (left)
                     .withRotationalRate(-driver.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
             )
         );
 
-        driver.y().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
         
-        /* 
+        
         driver.x().whileTrue(drivetrain.getPoseFinder().toPose(new Pose2d(1.25, 3.3, Rotation2d.kZero)));
         driver.y().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
         driver.a().whileTrue(drivetrain.applyRequest(() -> SwerveRequestFactory.brake));
@@ -84,7 +93,7 @@ public class RobotContainer {
 
         driver.rightBumper().whileTrue(LimeCommands.snapToApril(drivetrain));
         driver.leftBumper().whileTrue(LimeCommands.snapToApril2(drivetrain));
-*/
+
 
         
 
@@ -92,6 +101,7 @@ public class RobotContainer {
     }
 
     public Command getAutonomousCommand() {
+/* 
         // Simple drive forward auton
         final var idle = new SwerveRequest.Idle();
         return Commands.sequence(
@@ -107,7 +117,10 @@ public class RobotContainer {
             .withTimeout(5.0),
             // Finally idle for the rest of auton
             drivetrain.applyRequest(() -> idle)
-        );
+        );*/
+
+        return autoChooser.getSelected();
     }
+    
     
 }

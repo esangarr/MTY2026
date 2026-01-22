@@ -15,6 +15,7 @@ import com.pathplanner.lib.config.RobotConfig;
 import com.pathplanner.lib.controllers.PPHolonomicDriveController;
 import com.pathplanner.lib.path.PathConstraints;
 
+import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
@@ -62,6 +63,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     public final String limelightName = "limelight";
 
+
+
     /* The SysId routine to test */
     private SysIdRoutine m_sysIdRoutineToApply = null;
 
@@ -100,6 +103,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         NetworkIO.set("Chasis", "SysID", m_sysIdRoutineToApply.toString());
 
         this.finder = new PoseFinder(this, pathConstraints);
+
+
 
     }
 
@@ -270,6 +275,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         updateVision();
         field.setRobotPose(getState().Pose);
         NetworkIO.set("Chasis", "Distancia", getDistanceToTag());
+        NetworkIO.set("Chasis", "Distancia2", getOdometryFrequency());
+
         
     }
 
@@ -288,6 +295,23 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
         return 0.0;
     }
+
+    public double calculateDistanceTrig(double targetHeightMeters) {
+    double cameraHeightMeters = 0.5; // EJEMPLO: Tu cámara está a 50cm del piso
+    double cameraMountAngleDegrees = 25.0; // EJEMPLO: Inclinada 25 grados hacia arriba
+    
+    double ty = LimelightHelpers.getTY("limelight"); // Ángulo vertical que ve la cámara
+    
+    if (LimelightHelpers.getTV("limelight")) {
+        double angleToGoalRadians = Math.toRadians(cameraMountAngleDegrees + ty);
+        
+        // Evitar división por cero
+        if (angleToGoalRadians == 0) return 0.0;
+
+        return (targetHeightMeters - cameraHeightMeters) / Math.tan(angleToGoalRadians);
+    }
+    return 0.0;
+}
 
     private void updateVision() {
         LimelightHelpers.SetRobotOrientation(limelightName, this.getPigeon2().getRotation2d().getDegrees(), 0, 0, 0, 0, 0);
