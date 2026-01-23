@@ -3,25 +3,25 @@
   "waypoints": [
     {
       "anchor": {
-        "x": 2.5,
-        "y": 3.5
+        "x": 8.698755555555556,
+        "y": 4.814555555555555
       },
       "prevControl": null,
       "nextControl": {
-        "x": 2.4950649220243437,
-        "y": 4.222259662181351
+        "x": 8.698755555555556,
+        "y": 4.015511111111111
       },
       "isLocked": false,
       "linkedName": null
     },
     {
       "anchor": {
-        "x": 2.5,
-        "y": 5.5
+        "x": 8.698755555555556,
+        "y": 2.3492111111111114
       },
       "prevControl": {
-        "x": 2.4925170198495,
-        "y": 4.907930845388934
+        "x": 8.698755555555556,
+        "y": 3.148255555555555
       },
       "nextControl": null,
       "isLocked": false,
@@ -33,7 +33,7 @@
   "pointTowardsZones": [],
   "eventMarkers": [],
   "globalConstraints": {
-    "maxVelocity": 1.0,
+    "maxVelocity": 6.0,
     "maxAcceleration": 6.0,
     "maxAngularVelocity": 540.0,
     "maxAngularAcceleration": 720.0,
@@ -42,13 +42,13 @@
   },
   "goalEndState": {
     "velocity": 0,
-    "rotation": 0.0
+    "rotation": 91.36392753160278
   },
   "reversed": false,
-  "folder": "SpeedChange",
+  "folder": "SimProve",
   "idealStartingState": {
-    "velocity": 6.0,
-    "rotation": 0.0
+    "velocity": 0,
+    "rotation": 180.0
   },
-  "useDefaultConstraints": false
+  "useDefaultConstraints": true
 }

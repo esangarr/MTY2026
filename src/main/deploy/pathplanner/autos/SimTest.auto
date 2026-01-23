@@ -7,13 +7,19 @@
         {
           "type": "path",
           "data": {
-            "pathName": "6.1ms_path"
+            "pathName": "GoNeutral"
           }
         },
         {
           "type": "path",
           "data": {
-            "pathName": "1ms_path"
+            "pathName": "eatFuel"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "PassFuel"
           }
         }
       ]

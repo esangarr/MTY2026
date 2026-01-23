@@ -48,6 +48,7 @@ public class RobotContainer {
     private final PathPlannerAuto Bump;
     private final PathPlannerAuto Bump2;
     private final PathPlannerAuto Bump2Loop;
+    private final PathPlannerAuto simTest;
 
 
     public RobotContainer() {
@@ -60,6 +61,7 @@ public class RobotContainer {
         Bump = new PathPlannerAuto("PassBump");
         Bump2 = new PathPlannerAuto("Bump2");
         Bump2Loop = new PathPlannerAuto ("Bump2Loop");
+        simTest = new PathPlannerAuto("SimTest");
 
 
         autoChooser.setDefaultOption("niggaMOve", moveHub);
@@ -70,6 +72,7 @@ public class RobotContainer {
         autoChooser.addOption("bumpPass", Bump);
         autoChooser.addOption("bumpTrench", Bump2);
         autoChooser.addOption("bump2Loop", Bump2Loop);
+        autoChooser.addOption("SimTest", simTest);
 
         SmartDashboard.putData("AutoSelector", autoChooser);
   
