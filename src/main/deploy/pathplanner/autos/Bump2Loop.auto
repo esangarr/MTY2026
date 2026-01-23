@@ -1,0 +1,49 @@
+{
+  "version": "2025.0",
+  "command": {
+    "type": "sequential",
+    "data": {
+      "commands": [
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Pass"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Copy of Pass"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Looping"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Pass"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Copy of Pass"
+          }
+        },
+        {
+          "type": "path",
+          "data": {
+            "pathName": "Looping"
+          }
+        }
+      ]
+    }
+  },
+  "resetOdom": true,
+  "folder": "New Folder",
+  "choreoAuto": false
+}

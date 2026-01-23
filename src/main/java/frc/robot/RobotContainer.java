@@ -44,6 +44,10 @@ public class RobotContainer {
     private final PathPlannerAuto moveHub;
     private final PathPlannerAuto rotar;
     private final PathPlannerAuto square;
+    private final PathPlannerAuto fastToSlow2;
+    private final PathPlannerAuto Bump;
+    private final PathPlannerAuto Bump2;
+    private final PathPlannerAuto Bump2Loop;
 
 
     public RobotContainer() {
@@ -52,12 +56,20 @@ public class RobotContainer {
         moveHub = new PathPlannerAuto("New Auto");
         rotar = new PathPlannerAuto("Rotacion");
         square = new PathPlannerAuto("Square");
+        fastToSlow2 = new PathPlannerAuto("Velocitychange");
+        Bump = new PathPlannerAuto("PassBump");
+        Bump2 = new PathPlannerAuto("Bump2");
+        Bump2Loop = new PathPlannerAuto ("Bump2Loop");
+
 
         autoChooser.setDefaultOption("niggaMOve", moveHub);
 
         autoChooser.addOption("rotar", rotar);
         autoChooser.addOption("cuadrado", square);
-        
+        autoChooser.addOption("DesacerelararBueno", fastToSlow2);
+        autoChooser.addOption("bumpPass", Bump);
+        autoChooser.addOption("bumpTrench", Bump2);
+        autoChooser.addOption("bump2Loop", Bump2Loop);
 
         SmartDashboard.putData("AutoSelector", autoChooser);
   
