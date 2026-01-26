@@ -10,12 +10,15 @@ import com.pathplanner.lib.commands.PathPlannerAuto;
 import com.stzteam.forgemini.io.SmartChooser;
 
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.trajectory.ExponentialProfile.Constraints;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 import edu.wpi.first.wpilibj2.command.Command;
 import edu.wpi.first.wpilibj2.command.Commands;
+import edu.wpi.first.wpilibj2.command.InstantCommand;
+import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
@@ -24,7 +27,7 @@ import frc.robot.DriveTrain.SwerveConstants.TunerConstants;
 import frc.robot.DriveTrain.SwerveSubs.CommandSwerveDrivetrain;
 import frc.robot.DriveTrain.SwerveSubs.PoseFinder;
 import frc.robot.DriveTrain.SwerveSubs.SwerveRequestFactory;
-
+import gg.questnav.questnav.QuestNav;
 import frc.robot.DriveTrain.SwerveSubs.PoseFinder;
 
 public class RobotContainer {
@@ -40,6 +43,8 @@ public class RobotContainer {
     public final CommandSwerveDrivetrain drivetrain = TunerConstants.createDrivetrain();
 
     private final SendableChooser<Command> autoChooser = new SendableChooser<>();
+
+    private final QuestNav quest = new QuestNav();
 
     private final PathPlannerAuto moveHub;
     private final PathPlannerAuto rotar;
@@ -116,25 +121,16 @@ public class RobotContainer {
     }
 
     public Command getAutonomousCommand() {
-/* 
-        // Simple drive forward auton
-        final var idle = new SwerveRequest.Idle();
-        return Commands.sequence(
-            // Reset our field centric heading to match the robot
-            // facing away from our alliance station wall (0 deg).
-            drivetrain.runOnce(() -> drivetrain.seedFieldCentric(Rotation2d.kZero)),
-            // Then slowly drive forward (away from us) for 5 seconds.
-            drivetrain.applyRequest(() ->
-                SwerveRequestFactory.driveFieldCentric.withVelocityX(0.5)
-                    .withVelocityY(0)
-                    .withRotationalRate(0)
-            )
-            .withTimeout(5.0),
-            // Finally idle for the rest of auton
-            drivetrain.applyRequest(() -> idle)
-        );*/
 
-        return autoChooser.getSelected();
+        return new SequentialCommandGroup(
+        // PathPlanner resetea la odometría del swerve internamente al empezar
+        autoChooser.getSelected(), 
+        
+        // Justo después, sincronizamos el Quest
+        new InstantCommand(() -> {
+            quest.setPose(new Pose3d(drivetrain.getState().Pose));
+        })
+    );
     }
     
     

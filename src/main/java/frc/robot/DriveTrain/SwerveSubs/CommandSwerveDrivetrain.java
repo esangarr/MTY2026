@@ -19,7 +19,10 @@ import edu.wpi.first.cameraserver.CameraServer;
 import edu.wpi.first.math.Matrix;
 import edu.wpi.first.math.VecBuilder;
 import edu.wpi.first.math.geometry.Pose2d;
+import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform3d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
@@ -36,6 +39,8 @@ import edu.wpi.first.wpilibj2.command.Subsystem;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine;
 import frc.robot.DriveTrain.SwerveConstants.TunerConstants.TunerSwerveDrivetrain;
 import frc.robot.Vision.LimelightHelpers;
+import gg.questnav.questnav.PoseFrame;
+import gg.questnav.questnav.QuestNav;
 
 
 /**
@@ -62,6 +67,11 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     public final SysIdRoutineManager sysIdManager;
 
     public final String limelightName = "limelight";
+
+    private final QuestNav quest = new QuestNav();
+    private final Transform3d ROBOT_TO_QUEST = new Transform3d(0,0,0, new Rotation3d(0,0,0));
+
+    private Pose3d lastKnownRobotPose = new Pose3d();
 
 
 
@@ -271,13 +281,49 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                 m_hasAppliedOperatorPerspective = true;
             });
         }
+
+        PoseFrame[] poseFrames = quest.getAllUnreadPoseFrames();
+
+        if (poseFrames.length > 0) {
+            // Tomamos el último frame de la lista (el más reciente)
+            Pose3d latestQuestPose = poseFrames[poseFrames.length - 1].questPose3d();
+            
+            // Lo transformamos a coordenadas de robot
+            lastKnownRobotPose = latestQuestPose.transformBy(ROBOT_TO_QUEST.inverse());
+        
+            
+        }
+        
   
         updateVision();
+        quest.commandPeriodic();
+
         field.setRobotPose(getState().Pose);
+
         NetworkIO.set("Chasis", "Distancia", getDistanceToTag());
         NetworkIO.set("Chasis", "Distancia2", getOdometryFrequency());
 
+        NetworkIO.set("Chasis","QuestPose", getQuestPose());
+
+
         
+    }
+
+    public Pose3d getQuestPose(){
+
+        return lastKnownRobotPose;
+        
+
+    }
+
+    
+
+    public void setQuestPose(Pose3d pose){
+
+        Pose3d questPose = pose.transformBy(ROBOT_TO_QUEST);
+
+        quest.setPose(questPose);
+
     }
 
     public double getDistanceToTag() {
