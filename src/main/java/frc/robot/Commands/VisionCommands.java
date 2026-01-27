@@ -15,10 +15,6 @@ public class VisionCommands {
         return Commands.run(()-> {swerve.aproachXY();},swerve);
     }
 
-    public static Command driveFacingTag(CommandSwerveDrivetrain swerve, double xspeed, double yspeed){
-        return Commands.run(()-> {swerve.driveFacingTag(xspeed, yspeed);},swerve);
-    }
-
     public static Command ResetQuestPose(CommandSwerveDrivetrain swerve){
         return Commands.run(()-> {swerve.setQuestPose(new Pose3d());});
     }

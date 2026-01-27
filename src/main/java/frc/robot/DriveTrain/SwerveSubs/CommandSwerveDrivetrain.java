@@ -419,47 +419,14 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     );
     }
 
-    /**
-     * MODO 2: AIM ASSIST (Para Teleop)
-     * El piloto controla X/Y, el robot controla el giro hacia el tag.
-     * @param xSpeed Velocidad X del Joystick
-     * @param ySpeed Velocidad Y del Joystick
-     */
-    public void driveFacingTag(double xSpeed, double ySpeed) {
-        double tx = LimelightHelpers.getTX("limelight");
-        boolean hasTarget = LimelightHelpers.getTV("limelight");
-
-        // Calcular el ángulo actual del robot
-        Rotation2d currentHeading = this.getPigeon2().getRotation2d();
-
-        // Si vemos tag, el ángulo deseado es: (MiAngulo - ErrorDelTag)
-        // Si no vemos tag, mantenemos el ángulo actual
-        Rotation2d targetHeading = hasTarget 
-            ? currentHeading.minus(Rotation2d.fromDegrees(tx)) 
-            : currentHeading;
-
-        // Usamos el request de Aim de la Factory
-        setControl(SwerveRequestFactory.aimRequest
-            .withVelocityX(xSpeed)
-            .withVelocityY(ySpeed)
-            .withTargetDirection(targetHeading)
-        );
-    }
-    
-    public void moveX(double speed) { 
-        setControl(SwerveRequestFactory.driveRobotCentric.withVelocityX(speed));
-    }
 
     public static Command moveXCommand(CommandSwerveDrivetrain swerve, double speed){
-        return Commands.run(()-> {swerve.moveX(speed);});
+        return Commands.run(()-> {swerve.setControl(SwerveRequestFactory.driveRobotCentric.withVelocityX(speed).withVelocityY(0).withRotationalRate(0));}, swerve);
     }
 
-    public void moveY(double speed) { 
-        setControl(SwerveRequestFactory.driveRobotCentric.withVelocityY(speed));
-    }
 
     public static Command moveYCommand(CommandSwerveDrivetrain swerve, double speed){
-        return Commands.run(()-> {swerve.moveY(speed);});
+        return Commands.run(()-> {swerve.setControl(SwerveRequestFactory.driveRobotCentric.withVelocityX(0).withVelocityY(speed).withRotationalRate(0));}, swerve);
     }
 
     public PoseFinder getPoseFinder(){
