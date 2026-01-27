@@ -22,13 +22,13 @@ import edu.wpi.first.wpilibj2.command.SequentialCommandGroup;
 import edu.wpi.first.wpilibj2.command.button.CommandXboxController;
 import edu.wpi.first.wpilibj2.command.button.RobotModeTriggers;
 import edu.wpi.first.wpilibj2.command.sysid.SysIdRoutine.Direction;
-import frc.robot.Commands.LimeCommands;
 import frc.robot.DriveTrain.SwerveConstants.TunerConstants;
 import frc.robot.DriveTrain.SwerveSubs.CommandSwerveDrivetrain;
 import frc.robot.DriveTrain.SwerveSubs.PoseFinder;
 import frc.robot.DriveTrain.SwerveSubs.SwerveRequestFactory;
 import gg.questnav.questnav.QuestNav;
 import frc.robot.DriveTrain.SwerveSubs.PoseFinder;
+import frc.robot.Commands.VisionCommands;
 
 public class RobotContainer {
  
@@ -88,33 +88,38 @@ public class RobotContainer {
         final var idle = new SwerveRequest.Idle();
         RobotModeTriggers.disabled().whileTrue(drivetrain.applyRequest(() -> idle).ignoringDisable(true) );
         // -------- SYSID CARACTESIZATION CONTROL -----------------------------------------------------------------------
-/* 
+        /* 
         driver.povUp().whileTrue(drivetrain.sysIdDynamic(Direction.kForward));
         driver.povDown().whileTrue(drivetrain.sysIdDynamic(Direction.kReverse));
         driver.povLeft().whileTrue(drivetrain.sysIdQuasistatic(Direction.kForward));
         driver.povRight().whileTrue(drivetrain.sysIdQuasistatic(Direction.kReverse));*/
         
-
+        // ----------------------------------------------------- DRIVER -----------------------------------------------------
         drivetrain.setDefaultCommand(
-            // Drivetrain will execute this command periodically
             drivetrain.applyRequest(() ->
                 SwerveRequestFactory.driveFieldCentric.withVelocityX(-driver.getLeftY() * MaxSpeed ) // Drive forward with negative Y (forward)
                     .withVelocityY(-driver.getLeftX() * MaxSpeed) // Drive left with negative X (left)
                     .withRotationalRate(-driver.getRightX() * MaxAngularRate) // Drive counterclockwise with negative X (left)
             )
         );
+    
 
+        driver.povUp().whileTrue(CommandSwerveDrivetrain.moveXCommand(drivetrain, 0.5));
+        driver.povDown().whileTrue(CommandSwerveDrivetrain.moveXCommand(drivetrain, -0.5));
+        driver.povLeft().whileTrue(CommandSwerveDrivetrain.moveYCommand(drivetrain, 0.5));
+        driver.povRight().whileTrue(CommandSwerveDrivetrain.moveYCommand(drivetrain, -0.5));
+
+        driver.start().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
         
-        
+        driver.rightBumper().whileTrue(drivetrain.applyRequest(() -> SwerveRequestFactory.brake));
+        driver.leftBumper().whileTrue(drivetrain.applyRequest(() ->SwerveRequestFactory.point.withModuleDirection(new Rotation2d(-driver.getLeftY(), -driver.getLeftX()))));
+
         driver.x().whileTrue(drivetrain.getPoseFinder().toPose(new Pose2d(1.25, 3.3, Rotation2d.kZero)));
-        driver.y().onTrue(drivetrain.runOnce(drivetrain::seedFieldCentric));
-        driver.a().whileTrue(drivetrain.applyRequest(() -> SwerveRequestFactory.brake));
-        driver.b().whileTrue(drivetrain.applyRequest(() ->SwerveRequestFactory.point.withModuleDirection(new Rotation2d(-driver.getLeftY(), -driver.getLeftX()))));
 
-        driver.rightBumper().whileTrue(LimeCommands.snapToApril(drivetrain));
-        driver.leftBumper().whileTrue(LimeCommands.snapToApril2(drivetrain));
+        driver.b().whileTrue(VisionCommands.ResetQuestPose(drivetrain));
 
 
+        // ----------------------------------------------------- DRIVER -----------------------------------------------------
         
 
         drivetrain.registerTelemetry(logger::telemeterize);
@@ -125,7 +130,6 @@ public class RobotContainer {
         return new SequentialCommandGroup(
         // PathPlanner resetea la odometría del swerve internamente al empezar
         autoChooser.getSelected(), 
-        
         // Justo después, sincronizamos el Quest
         new InstantCommand(() -> {
             quest.setPose(new Pose3d(drivetrain.getState().Pose));

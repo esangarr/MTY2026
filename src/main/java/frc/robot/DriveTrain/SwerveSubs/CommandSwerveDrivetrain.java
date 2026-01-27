@@ -41,6 +41,7 @@ import frc.robot.DriveTrain.SwerveConstants.TunerConstants.TunerSwerveDrivetrain
 import frc.robot.Vision.LimelightHelpers;
 import gg.questnav.questnav.PoseFrame;
 import gg.questnav.questnav.QuestNav;
+import pabeles.concurrency.ConcurrencyOps.Reset;
 
 
 /**
@@ -69,9 +70,14 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     public final String limelightName = "limelight";
 
     private final QuestNav quest = new QuestNav();
-    private final Transform3d ROBOT_TO_QUEST = new Transform3d(0,0,0, new Rotation3d(0,0,0));
+    private final Transform3d ROBOT_TO_QUEST = new Transform3d(0,0.35,1.67, new Rotation3d(0,0,Math.toRadians(90)));
 
-    private Pose3d lastKnownRobotPose = new Pose3d();
+    Matrix<N3, N1> QUESTNAV_STD_DEVS =VecBuilder.fill(
+        0.02, // Trust down to 2cm in X direction
+        0.02, // Trust down to 2cm in Y direction
+        0.035 // Trust down to 2 degrees rotational
+    );
+
 
 
 
@@ -282,27 +288,35 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
             });
         }
 
-        PoseFrame[] poseFrames = quest.getAllUnreadPoseFrames();
+        /* //---------------------- Implementación del Quest a la odometria ----------------------
+        PoseFrame[] questFrames = quest.getAllUnreadPoseFrames();
 
-        if (poseFrames.length > 0) {
-            // Tomamos el último frame de la lista (el más reciente)
-            Pose3d latestQuestPose = poseFrames[poseFrames.length - 1].questPose3d();
-            
-            // Lo transformamos a coordenadas de robot
-            lastKnownRobotPose = latestQuestPose.transformBy(ROBOT_TO_QUEST.inverse());
         
+        for (PoseFrame questFrame : questFrames) {
             
-        }
-        
+            if (questFrame.isTracking()) {
+               
+                Pose3d questPose = questFrame.questPose3d();
+              
+                double timestamp = questFrame.dataTimestamp();
+
+                
+                Pose3d robotPose = questPose.transformBy(ROBOT_TO_QUEST.inverse());
+                
+                addVisionMeasurement(robotPose.toPose2d(), timestamp, QUESTNAV_STD_DEVS);
+            }
+        }*/
+
+
   
-        updateVision();
+        updateLimeVision();
+
         quest.commandPeriodic();
 
         field.setRobotPose(getState().Pose);
 
         NetworkIO.set("Chasis", "Distancia", getDistanceToTag());
         NetworkIO.set("Chasis", "Distancia2", getOdometryFrequency());
-
         NetworkIO.set("Chasis","QuestPose", getQuestPose());
 
 
@@ -310,13 +324,17 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     }
 
     public Pose3d getQuestPose(){
+        PoseFrame[] poseFrames = quest.getAllUnreadPoseFrames();
 
-        return lastKnownRobotPose;
-        
+        if (poseFrames.length > 0) {
+        Pose3d questPose = poseFrames[poseFrames.length - 1].questPose3d();
 
+        Pose3d robotPose = questPose.transformBy(ROBOT_TO_QUEST.inverse());
+        return robotPose;
+        }       
+        return null;
     }
 
-    
 
     public void setQuestPose(Pose3d pose){
 
@@ -359,7 +377,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     return 0.0;
 }
 
-    private void updateVision() {
+    private void updateLimeVision() {
         LimelightHelpers.SetRobotOrientation(limelightName, this.getPigeon2().getRotation2d().getDegrees(), 0, 0, 0, 0, 0);
         LimelightHelpers.PoseEstimate mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelightName);
         
@@ -429,11 +447,19 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     }
     
     public void moveX(double speed) { 
-        setControl(SwerveRequestFactory.simpleDriveRequest.withVelocityX(speed));
+        setControl(SwerveRequestFactory.driveRobotCentric.withVelocityX(speed));
+    }
+
+    public static Command moveXCommand(CommandSwerveDrivetrain swerve, double speed){
+        return Commands.run(()-> {swerve.moveX(speed);});
     }
 
     public void moveY(double speed) { 
-        setControl(SwerveRequestFactory.simpleDriveRequest.withVelocityY(speed));
+        setControl(SwerveRequestFactory.driveRobotCentric.withVelocityY(speed));
+    }
+
+    public static Command moveYCommand(CommandSwerveDrivetrain swerve, double speed){
+        return Commands.run(()-> {swerve.moveY(speed);});
     }
 
     public PoseFinder getPoseFinder(){
