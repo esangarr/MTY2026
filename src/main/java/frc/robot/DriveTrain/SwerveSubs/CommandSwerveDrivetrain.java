@@ -22,7 +22,9 @@ import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
 import edu.wpi.first.math.geometry.Rotation3d;
+import edu.wpi.first.math.geometry.Transform2d;
 import edu.wpi.first.math.geometry.Transform3d;
+import edu.wpi.first.math.geometry.Translation2d;
 import edu.wpi.first.math.kinematics.ChassisSpeeds;
 import edu.wpi.first.math.numbers.N1;
 import edu.wpi.first.math.numbers.N3;
@@ -70,7 +72,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     public final String limelightName = "limelight";
 
     private final QuestNav quest = new QuestNav();
-    private final Transform3d ROBOT_TO_QUEST = new Transform3d(0,0.35,1.67, new Rotation3d(0,0,Math.toRadians(90)));
+    private final Transform3d ROBOT_TO_QUEST = new Transform3d(0,-0.332,0, new Rotation3d(0,0,Math.toRadians(-90)));
 
     Matrix<N3, N1> QUESTNAV_STD_DEVS =VecBuilder.fill(
         0.02, // Trust down to 2cm in X direction
@@ -122,7 +124,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
 
 
-    }
+    }   
 
     /**
      * Constructs a CTRE SwerveDrivetrain using the specified constants.
@@ -287,27 +289,6 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                 m_hasAppliedOperatorPerspective = true;
             });
         }
-
-        /* //---------------------- Implementación del Quest a la odometria ----------------------
-        PoseFrame[] questFrames = quest.getAllUnreadPoseFrames();
-
-        
-        for (PoseFrame questFrame : questFrames) {
-            
-            if (questFrame.isTracking()) {
-               
-                Pose3d questPose = questFrame.questPose3d();
-              
-                double timestamp = questFrame.dataTimestamp();
-
-                
-                Pose3d robotPose = questPose.transformBy(ROBOT_TO_QUEST.inverse());
-                
-                addVisionMeasurement(robotPose.toPose2d(), timestamp, QUESTNAV_STD_DEVS);
-            }
-        }*/
-
-
   
         updateLimeVision();
 
@@ -315,13 +296,12 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
         field.setRobotPose(getState().Pose);
 
-        NetworkIO.set("Chasis", "Distancia", getDistanceToTag());
-        NetworkIO.set("Chasis", "Distancia2", getOdometryFrequency());
         NetworkIO.set("Chasis","QuestPose", getQuestPose());
 
 
         
     }
+
 
     public Pose3d getQuestPose(){
         PoseFrame[] poseFrames = quest.getAllUnreadPoseFrames();
@@ -338,7 +318,7 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     public void setQuestPose(Pose3d pose){
 
-        Pose3d questPose = pose.transformBy(ROBOT_TO_QUEST);
+        Pose3d questPose = pose.transformBy(ROBOT_TO_QUEST.inverse());
 
         quest.setPose(questPose);
 
@@ -360,22 +340,6 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         return 0.0;
     }
 
-    public double calculateDistanceTrig(double targetHeightMeters) {
-    double cameraHeightMeters = 0.5; // EJEMPLO: Tu cámara está a 50cm del piso
-    double cameraMountAngleDegrees = 25.0; // EJEMPLO: Inclinada 25 grados hacia arriba
-    
-    double ty = LimelightHelpers.getTY("limelight"); // Ángulo vertical que ve la cámara
-    
-    if (LimelightHelpers.getTV("limelight")) {
-        double angleToGoalRadians = Math.toRadians(cameraMountAngleDegrees + ty);
-        
-        // Evitar división por cero
-        if (angleToGoalRadians == 0) return 0.0;
-
-        return (targetHeightMeters - cameraHeightMeters) / Math.tan(angleToGoalRadians);
-    }
-    return 0.0;
-}
 
     private void updateLimeVision() {
         LimelightHelpers.SetRobotOrientation(limelightName, this.getPigeon2().getRotation2d().getDegrees(), 0, 0, 0, 0, 0);
@@ -387,8 +351,10 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         
         NetworkIO.set("Chasis", "Mt2", mt2.pose);
 
-
         addVisionMeasurement(mt2.pose, mt2.timestampSeconds, VecBuilder.fill(.3,.3,9999999));
+
+ 
+
     }
 
     public void aproachY() { 

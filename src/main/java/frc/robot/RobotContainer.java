@@ -12,6 +12,7 @@ import com.stzteam.forgemini.io.SmartChooser;
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
 import edu.wpi.first.math.geometry.Rotation2d;
+import edu.wpi.first.math.geometry.Rotation3d;
 import edu.wpi.first.math.trajectory.ExponentialProfile.Constraints;
 import edu.wpi.first.wpilibj.smartdashboard.SendableChooser;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -54,6 +55,7 @@ public class RobotContainer {
     private final PathPlannerAuto Bump2;
     private final PathPlannerAuto Bump2Loop;
     private final PathPlannerAuto simTest;
+    private final PathPlannerAuto nothing;
 
 
     public RobotContainer() {
@@ -67,17 +69,16 @@ public class RobotContainer {
         Bump2 = new PathPlannerAuto("Bump2");
         Bump2Loop = new PathPlannerAuto ("Bump2Loop");
         simTest = new PathPlannerAuto("SimTest");
+        nothing = new PathPlannerAuto("Nothing_Auto");
 
 
         autoChooser.setDefaultOption("niggaMOve", moveHub);
 
         autoChooser.addOption("rotar", rotar);
         autoChooser.addOption("cuadrado", square);
-        autoChooser.addOption("DesacerelararBueno", fastToSlow2);
-        autoChooser.addOption("bumpPass", Bump);
-        autoChooser.addOption("bumpTrench", Bump2);
         autoChooser.addOption("bump2Loop", Bump2Loop);
         autoChooser.addOption("SimTest", simTest);
+        autoChooser.addOption("NotMove", nothing);
 
         SmartDashboard.putData("AutoSelector", autoChooser);
   
@@ -132,7 +133,7 @@ public class RobotContainer {
         autoChooser.getSelected(), 
         // Justo después, sincronizamos el Quest
         new InstantCommand(() -> {
-            quest.setPose(new Pose3d(drivetrain.getState().Pose));
+            quest.setPose(new Pose3d(drivetrain.getState().Pose.getX(),drivetrain.getState().Pose.getY()  ,0,new Rotation3d(0,0,Math.toRadians(90))));
         })
     );
     }
