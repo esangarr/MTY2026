@@ -56,6 +56,7 @@ public class RobotContainer {
     private final PathPlannerAuto Bump2Loop;
     private final PathPlannerAuto simTest;
     private final PathPlannerAuto nothing;
+    private double x =0;
 
 
     public RobotContainer() {
