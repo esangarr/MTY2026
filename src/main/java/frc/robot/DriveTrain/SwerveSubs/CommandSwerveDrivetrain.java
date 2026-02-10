@@ -81,8 +81,6 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
     );
 
 
-
-
     /* The SysId routine to test */
     private SysIdRoutine m_sysIdRoutineToApply = null;
 
@@ -272,6 +270,8 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
 
     @Override
     public void periodic() {
+
+        quest.commandPeriodic();
         /*
          * Periodically try to apply the operator perspective.
          * If we haven't applied the operator perspective before, then we should apply it regardless of DS state.
@@ -289,12 +289,35 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
                 m_hasAppliedOperatorPerspective = true;
             });
         }
+
+        //---------------------- Implementación del Quest a la odometria ----------------------
+        PoseFrame[] questFrames = quest.getAllUnreadPoseFrames();
+
+        
+        for (PoseFrame questFrame : questFrames) {
+            
+            if (questFrame.isTracking()) {
+               
+                Pose3d questPose = questFrame.questPose3d();
+              
+                double timestamp = questFrame.dataTimestamp();
+
+                
+                Pose3d robotPose = questPose.transformBy(ROBOT_TO_QUEST.inverse());
+                
+                addVisionMeasurement(robotPose.toPose2d(), timestamp, QUESTNAV_STD_DEVS);
+            }
+        }
   
         updateLimeVision();
 
-        quest.commandPeriodic();
+
+        
+        SetQuestToLime();
+        
 
         field.setRobotPose(getState().Pose);
+
 
         NetworkIO.set("Chasis","QuestPose", getQuestPose());
 
@@ -340,6 +363,14 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         return 0.0;
     }
 
+    private void SetQuestToLime(){
+        LimelightHelpers.PoseEstimate mt2 = LimelightHelpers.getBotPoseEstimate_wpiBlue_MegaTag2(limelightName);
+
+        if (mt2.tagCount > 0){
+            quest.setPose(new Pose3d(mt2.pose.getX(), mt2.pose.getY() - 0.3,0,new Rotation3d(0, 0, getPigeon2().getRotation2d().getRadians() + Math.toRadians(-90))));
+        }
+
+    }
 
     private void updateLimeVision() {
         LimelightHelpers.SetRobotOrientation(limelightName, this.getPigeon2().getRotation2d().getDegrees(), 0, 0, 0, 0, 0);
@@ -351,9 +382,10 @@ public class CommandSwerveDrivetrain extends TunerSwerveDrivetrain implements Su
         
         NetworkIO.set("Chasis", "Mt2", mt2.pose);
 
+        ///setQuestPose(new Pose3d(mt2.pose));
+
         addVisionMeasurement(mt2.pose, mt2.timestampSeconds, VecBuilder.fill(.3,.3,9999999));
 
- 
 
     }
 
