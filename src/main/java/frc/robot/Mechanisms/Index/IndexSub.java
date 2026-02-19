@@ -34,7 +34,7 @@ public class IndexSub extends IOSubsystem {
     private double indexTemperature = 0.0;
     private boolean hasGamePiece = false;
     
-//Constructor
+    //Constructor
     public IndexSub() {
         super("IndexSubsystem");
         
@@ -50,7 +50,7 @@ public class IndexSub extends IOSubsystem {
         rollersEncoder = rollersMotor.getEncoder();
         indexEncoder = indexMotor.getEncoder();
         
-//Si hay sensor inicializar
+        //Si hay sensor inicializar
         hasSensor = IndexConstants.HAS_GAME_PIECE_SENSOR;
         if (hasSensor) {
             gamePieceSensor = new DigitalInput(IndexConstants.GAME_PIECE_SENSOR_DIO_PORT);
@@ -71,8 +71,8 @@ public class IndexSub extends IOSubsystem {
         config.signals.primaryEncoderVelocityPeriodMs(periodMs);
         config.signals.primaryEncoderPositionPeriodMs(periodMs);
         
-//Configuración
-//No se que es el error de depracated, En un futuro seguramente eso ya no funcione pero por ahroa si
+    //Configuración
+    //No se que es el error de depracated, En un futuro seguramente eso ya no funcione pero por ahroa si
     motor.configure(config, SparkBase.ResetMode.kResetSafeParameters, SparkBase.PersistMode.kPersistParameters);
 
 
@@ -95,8 +95,6 @@ public class IndexSub extends IOSubsystem {
         return rollersEncoder.getVelocity();
     }
     
-
-    
     @Signal(key = "Rollers/Temperature_C")
     public double getRollersTemperatureSignal() {
         return rollersTemperature;
@@ -106,8 +104,6 @@ public class IndexSub extends IOSubsystem {
     public double getIndexVelocitySignal() {
         return indexEncoder.getVelocity();
     }
-    
-
     
     @Signal(key = "Index/Temperature_C")
     public double getIndexTemperatureSignal() {
@@ -121,7 +117,7 @@ public class IndexSub extends IOSubsystem {
     
     
   //Metodos de control
-    public void start() {
+    public void run() {
         isRunning = true;
         rollersMotor.set(IndexConstants.INDEXER_SPEED);
         indexMotor.set(IndexConstants.INDEXER_SPEED);
@@ -196,8 +192,9 @@ public class IndexSub extends IOSubsystem {
     }
     //Después se puede borrar la temperatura y otras cosas para simplificar la smartdashboard
     //initSendable? = https://docs.wpilib.org/en/stable/docs/software/telemetry/writing-sendable-classes.html
-       @Override
+    @Override
     public void initSendable(SendableBuilder builder) {
+
         super.initSendable(builder);
         builder.setSmartDashboardType("Indexer");
         
