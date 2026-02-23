@@ -97,6 +97,17 @@ public class MechanismsConstants {
         public static final double GEAR_RATIO = 0;
     }
 
+    public static class ShooterConstants{
+        public static final int leaderMot_ID = 0;
+        public static final int followerMot_ID = 0;
+
+        public static boolean absoluteInverted = false;
+        public static boolean followerInverted = false;
+        public static int kCurrentLimit;
+        public static double kMaxVolts = 12;
+
+    }
+
     
     public static class ClimberConstants{
         public static final int CLIMBER_ID = 0;

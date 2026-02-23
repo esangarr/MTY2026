@@ -10,6 +10,7 @@ import com.ctre.phoenix6.hardware.TalonFX;
 import com.ctre.phoenix6.configs.MotorOutputConfigs;
 import com.ctre.phoenix6.configs.TalonFXConfiguration;
 import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.controls.VoltageOut;
 import com.ctre.phoenix6.signals.NeutralModeValue;
 import com.ctre.phoenix6.configs.TalonFXConfigurator;
 import com.ctre.phoenix6.configs.CurrentLimitsConfigs;
@@ -23,17 +24,22 @@ public class ClimberSub extends IOSubsystem{
     private final TalonFX climberMotor;
     private final TalonFXConfiguration climberConfig;
 
-    PositionVoltage positionVoltage;
+    private final MotorOutputConfigs motorConfigs ;
+    private final CurrentLimitsConfigs limitConfigs ;
 
-    private final MotorOutputConfigs motorConfigs = new MotorOutputConfigs();
-    private final CurrentLimitsConfigs limitConfigs = new CurrentLimitsConfigs();
-
+    private final VoltageOut voltageRequest;
 
     private static final String TABLE = "ClimberSubsystem";
 
 
     public ClimberSub(){
         super(TABLE);
+
+        motorConfigs = new MotorOutputConfigs();
+        limitConfigs = new CurrentLimitsConfigs();
+
+        voltageRequest = new VoltageOut(0);
+
 
         motorConfigs.Inverted = ClimberConstants.invertedValue;
         motorConfigs.NeutralMode = NeutralModeValue.Brake;
@@ -46,8 +52,6 @@ public class ClimberSub extends IOSubsystem{
 
         climberConfig.Feedback.SensorToMechanismRatio = ClimberConstants.gear_Ratio;
     
-        positionVoltage = new PositionVoltage(0);
-        
 
         climberMotor.getConfigurator().apply(motorConfigs);
     }
@@ -58,13 +62,13 @@ public class ClimberSub extends IOSubsystem{
     }
     
 
-    public double getPosition(){
+    @Signal(key="Voltage")
+    public double getVoltage(){
         return climberMotor.getMotorVoltage().getValueAsDouble();
     }
 
-    public void reach (double targeVoltage){
-        double targetPosition = Units.degreesToRotations(targeVoltage);
-        climberMotor.setControl(positionVoltage.withPosition(targetPosition)); 
+    public void reachVoltage(double targetVoltage){
+        climberMotor.setControl(voltageRequest.withOutput(targetVoltage));
     }
 
     public void goUp(double speed){
@@ -77,7 +81,6 @@ public class ClimberSub extends IOSubsystem{
         climberMotor.stopMotor();
     }
 
-    
 
     @Override
     public void periodicLogic() {}
