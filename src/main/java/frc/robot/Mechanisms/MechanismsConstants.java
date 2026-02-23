@@ -3,6 +3,10 @@ package frc.robot.Mechanisms;
 import static edu.wpi.first.units.Units.Kilograms;
 import static edu.wpi.first.units.Units.Meters;
 
+import com.ctre.phoenix6.controls.DutyCycleOut;
+import com.ctre.phoenix6.controls.PositionVoltage;
+import com.ctre.phoenix6.signals.InvertedValue;
+
 import edu.wpi.first.math.geometry.Translation3d;
 import edu.wpi.first.math.util.Units;
 import edu.wpi.first.units.measure.Distance;
@@ -91,5 +95,30 @@ public class MechanismsConstants {
 
         public static final double Tolerance = 1;
         public static final double GEAR_RATIO = 0;
+    }
+
+    
+    public static class ClimberConstants{
+        public static final int CLIMBER_ID = 0;
+        public static final boolean CLIMBER_MOTOR_INVERTED = false;
+
+        //CONFIGURACION DE MAXMOTION
+        public static final double kP = 0;
+        public static final double kI = 0;
+        public static final double kD = 0;
+
+        public static final double kS = 0;
+        public static final double kV = 0;
+        public static final double kA = 0;
+
+        public static final int currentLimit = 80;
+        public static final InvertedValue invertedValue = InvertedValue.Clockwise_Positive;
+        public static final double kCruiseVelocity = 0;
+        public static final double kMaxAcc = 0;
+
+
+        public static final double gear_Ratio = 0;
+        
+
     }
 }
