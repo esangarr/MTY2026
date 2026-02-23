@@ -119,6 +119,10 @@ public class IntakeSub extends IOSubsystem {
         angulatorMotor.setVoltage(voltage);
     }
 
+    public void setRollers(double speed){
+        intakeMotor.set(speed);
+    }
+
     @Signal(key="VelocityRollers")
     public double getVelocityIntake (){
         return intakeMotor.getVelocity().getValueAsDouble();
@@ -126,7 +130,6 @@ public class IntakeSub extends IOSubsystem {
 
    
     public void setAngle (double angleSetpoint){
-
         double target = Units.degreesToRotations(angleSetpoint);
         angulatorMotor.setControl(angulator_request.withPosition(target));
 

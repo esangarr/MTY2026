@@ -25,7 +25,7 @@ public class Robot extends TimedRobot {
 
     public Robot() {
         m_robotContainer = new RobotContainer();
-        CameraServer.startAutomaticCapture();
+        //CameraServer.startAutomaticCapture();
 
         //Optimizer.init();
     }
@@ -34,13 +34,8 @@ public class Robot extends TimedRobot {
     public void robotPeriodic() {
         m_timeAndJoystickReplay.update();
 
-        //double startTime = Timer.getFPGATimestamp();
-
         CommandScheduler.getInstance().run(); 
 
-        //double executionTime = Timer.getFPGATimestamp() - startTime;
-        
-        //Optimizer.update(executionTime);
 
 
     }
