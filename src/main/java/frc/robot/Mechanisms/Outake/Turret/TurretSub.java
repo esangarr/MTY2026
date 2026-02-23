@@ -83,8 +83,11 @@ public class TurretSub extends IOSubsystem{
     public void setPosition(Rotation2d angle) {
         azimuth.getClosedLoopController().setSetpoint(angle.getRotations(), ControlType.kMAXMotionPositionControl);
     }
-    
 
+    public double getPosition(){
+        return encoder.getPosition();
+    }
+    
     @Override 
     public void periodicLogic() {}
     

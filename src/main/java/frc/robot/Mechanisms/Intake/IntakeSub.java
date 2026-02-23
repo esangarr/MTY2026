@@ -40,7 +40,7 @@ public class IntakeSub extends IOSubsystem {
     
     //MotionMagic
          
-    private MotionMagicExpoVoltage angulator_request;
+    private MotionMagicExpoVoltage motionRequest;
 
     public IntakeSub(){
         
@@ -57,7 +57,7 @@ public class IntakeSub extends IOSubsystem {
 
         angConfigs.Feedback.SensorToMechanismRatio = IntakeConstants.GEAR_RATIO;
 
-        angulator_request = new MotionMagicExpoVoltage(0);
+        motionRequest = new MotionMagicExpoVoltage(0);
 
         var motorConfigs = new MotorOutputConfigs();
 
@@ -99,6 +99,14 @@ public class IntakeSub extends IOSubsystem {
         slot0Configs.kI = 0.0; // no output for integrated error
         slot0Configs.kD = 0.0; // A velocity error of 1 rps results in 0.1 V output
 
+        var slot1Configs = talonFXConfigs.Slot1;
+        slot1Configs.kS = 0.0; // Add 0.25 V output to overcome static friction
+        slot1Configs.kV = 0.0; // A velocity target of 1 rps results in 0.12 V output
+        slot1Configs.kA = 0.0; // An acceleration of 1 rps/s requires 0.01 V output
+        slot1Configs.kP = 0.0; // A position error of 2.5 rotations results in 12 V output
+        slot1Configs.kI = 0.0; // no output for integrated error
+        slot1Configs.kD = 0.0; // A velocity error of 1 rps results in 0.1 V output
+
         // set Motion Magic Expo settings
         var motionMagicConfigs = talonFXConfigs.MotionMagic;
         motionMagicConfigs.MotionMagicCruiseVelocity = 0; // Unlimited cruise velocity
@@ -128,11 +136,17 @@ public class IntakeSub extends IOSubsystem {
         return intakeMotor.getVelocity().getValueAsDouble();
     }
 
-   
-    public void setAngle (double angleSetpoint){
-        double target = Units.degreesToRotations(angleSetpoint);
-        angulatorMotor.setControl(angulator_request.withPosition(target));
+    public enum MODE{
+        UP, DOWN
+    }
 
+    public void setAngle (double angleSetpoint, MODE modo){
+        if (modo == MODE.UP){
+        angulatorMotor.setControl(motionRequest.withPosition(Units.degreesToRotations(angleSetpoint)).withSlot(0));
+        }
+        if (modo == MODE.DOWN){
+        angulatorMotor.setControl(motionRequest.withPosition(Units.degreesToRotations(angleSetpoint)).withSlot(1));
+        }
     }
 
     @Signal(key="Setpoint")
