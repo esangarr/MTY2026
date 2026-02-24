@@ -117,10 +117,23 @@ public class IndexSub extends IOSubsystem {
     
     
   //Metodos de control
-    public void run() {
+    public void Run(double speed) {
+        isRunning = true;
+        rollersMotor.set(speed);
+        indexMotor.set(speed);
+    }
+
+    public void Runindex(){
+
+        isRunning = true;
+        indexMotor.set(IndexConstants.INDEXER_SPEED);
+    }
+
+    public void Runrollers(){
+
         isRunning = true;
         rollersMotor.set(IndexConstants.INDEXER_SPEED);
-        indexMotor.set(IndexConstants.INDEXER_SPEED);
+        
     }
   
     public void stop() {

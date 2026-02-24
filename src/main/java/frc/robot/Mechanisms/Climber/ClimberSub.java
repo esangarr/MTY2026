@@ -71,16 +71,13 @@ public class ClimberSub extends IOSubsystem{
         climberMotor.setControl(voltageRequest.withOutput(targetVoltage));
     }
 
-    public void goUp(double speed){
+    public void climb(double speed){
         climberMotor.setVoltage(speed);
     }
-    public void goDown(double speed){
-        climberMotor.setVoltage(-speed);
-    }
+
     public void stop(){
         climberMotor.stopMotor();
     }
-
 
     @Override
     public void periodicLogic() {}
