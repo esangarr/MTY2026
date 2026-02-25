@@ -108,6 +108,67 @@ public class MechanismsConstants {
 
     }
 
+
+      //Angulator Constants con Interpolación
+    public static class ArmConstants {
+        
+        // ID del motor
+        public static final int kId = 23;  // Cambiar
+        
+        
+        public static final int currentLimit = 80;
+        
+        //Inversión si es necesaria
+        public static final boolean INVERTED = false;  
+        
+        // Constantes del PID
+        public static final double kP = 0;
+        public static final double kI = 0;
+        public static final double kD = 0;
+        
+        // Constantes del FeedForw
+        public static final double kS = 0;
+        public static final double kV = 0;
+        public static final double kA = 0;
+        
+        // Motion magic
+        public static final double kCruiseVelocity = 42;
+        public static final double kMaxAcc = 80;
+        
+
+        public static final double kGearRatio = 50.0;
+    
+        
+        // Limites de los angulos en grados
+        public static final double kMinAngleDegrees = 0;
+        public static final double kMaxAngleDegrees = 40;
+        
+        // Tolerancia
+        public static final double ARM_TOLERANCE = 5.0;  // Grados de tolerancia
+        
+        //Tabla de Interpolación, usando map, esto viene desde MARS
+        public static final edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap INTERPOLATION_MAP = 
+            new edu.wpi.first.math.interpolation.InterpolatingDoubleTreeMap();
+        
+        static {
+            //FENDER / CONTACTO (Muy Cerca)
+            // Se necesita "bombear" la pelota  hacia arriba para que caiga en la zona de anotación
+            INTERPOLATION_MAP.put(1.00, 0.0);  // Hood totalmente abierto
+            
+            //   FUERA DEL TRENCH (Distancia Media)
+            // Cerramos un poco el hood 
+            INTERPOLATION_MAP.put(2.50, 18.0);
+            
+            //  OUTPOST / DEPOT (Lejos)
+            // Cerramos el hood casi al máximo.
+            INTERPOLATION_MAP.put(4.50, 32.0);
+            
+            //CROSS-FIELD (Máximo Rango) 
+            INTERPOLATION_MAP.put(6.00, 40.0);
+        }
+        
+        public static final double TELEMETRY_UPDATE_RATE_HZ = 50.0;
+    }
     
     public static class ClimberConstants{
         public static final int CLIMBER_ID = 0;
