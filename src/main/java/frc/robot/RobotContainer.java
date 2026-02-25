@@ -8,6 +8,8 @@ import com.ctre.phoenix6.SignalLogger;
 import com.ctre.phoenix6.swerve.SwerveRequest;
 import com.pathplanner.lib.commands.PathPlannerAuto;
 import com.stzteam.forgemini.io.SmartChooser;
+import frc.robot.Mechanisms.Index.IndexSub;
+
 
 import edu.wpi.first.math.geometry.Pose2d;
 import edu.wpi.first.math.geometry.Pose3d;
@@ -56,6 +58,7 @@ public class RobotContainer {
     private final PathPlannerAuto Bump2Loop;
     private final PathPlannerAuto simTest;
     private final PathPlannerAuto nothing;
+    private double x =0;
 
 
     public RobotContainer() {
